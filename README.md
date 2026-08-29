@@ -163,7 +163,7 @@ The app opens automatically in your browser at `http://localhost:8501`.
 | ![Summarizer](./Result%20Output/Summarizer.png) | ![General Agent](./Result%20Output/General%20Agent.png) |
 
 **Interface**
-![Interphase](./Result%20Output/Interphase.png)
+![Interphase](./Result%20Output/Interface.png)
 
 ---
 
