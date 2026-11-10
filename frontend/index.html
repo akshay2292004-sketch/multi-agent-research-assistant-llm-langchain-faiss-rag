@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Research Assistant</title>
+  <meta name="description" content="Ask questions about your research papers and get answers that cite the page they come from.">
+  <meta name="theme-color" content="#0f1013">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script>
+    try { var t = localStorage.getItem("ra_theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" defer></script>
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="logo" viewBox="0 0 32 32">
+      <rect width="32" height="32" rx="7" fill="var(--mark-bg)"/>
+      <path d="M12 8.5H8.5v15H12M20 8.5h3.5v15H20" fill="none" stroke="var(--mark-fg)" stroke-width="2.4" stroke-linecap="square"/>
+      <rect x="13.6" y="13.6" width="4.8" height="4.8" fill="var(--signal)"/>
+    </symbol>
+  </svg>
+
+  <input type="file" id="file-input" accept="application/pdf,.pdf" multiple hidden>
+
+  <div class="app">
+    <!-- ============================================================ Sidebar -->
+    <aside class="sidebar" id="sidebar" aria-label="Navigation">
+      <div class="brand">
+        <svg class="brand-mark" width="22" height="22" aria-hidden="true"><use href="#logo"/></svg>
+        <span class="brand-name">Research Assistant</span>
+      </div>
+
+      <div class="side-group">
+        <div class="side-label-row">
+          <span class="side-label">Documents</span>
+          <button class="text-btn" id="clear-papers" type="button" hidden>Remove all</button>
+        </div>
+        <ul class="doc-list" id="doc-list"></ul>
+        <button class="side-add" type="button" id="side-add">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Add papers
+        </button>
+      </div>
+
+      <div class="side-foot">
+        <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+        <span class="mono status-text" id="status-text">connecting</span>
+        <button class="icon-btn sm" id="theme-btn" type="button" aria-label="Switch theme"></button>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <!-- ============================================================ Main -->
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Open sidebar">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="crumbs">
+          <h1 class="crumb-current" id="view-title">Ask</h1>
+          <span class="crumb-meta mono" id="crumb-meta"></span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn" id="new-chat" type="button">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="btn-label">New conversation</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="banner" id="banner" role="status" hidden></div>
+
+      <!-- ---------------------------------------------------------- Ask -->
+      <section class="view view-ask" id="view-ask" aria-labelledby="view-title">
+        <div class="thread" id="messages">
+          <div class="intro" id="empty">
+            <div class="eyebrow mono">Cited answers from your papers</div>
+            <h2 class="intro-title">Ask your papers anything.</h2>
+            <p class="intro-text">Answers are grounded in the documents in your library, and every claim links to the
+              file and page it came from. Type <kbd>summarize</kbd> for a structured summary. Questions your papers
+              don't cover are answered from general knowledge and labelled that way.</p>
+
+            <dl class="facts" id="facts"></dl>
+
+            <div class="suggest-head">
+              <span id="prompt-label">Suggested</span>
+            </div>
+            <ol class="suggest" id="suggestions"></ol>
+          </div>
+        </div>
+
+        <form class="composer" id="composer">
+          <div class="composer-box">
+            <label for="input" class="sr-only">Your question</label>
+            <textarea id="input" rows="1" placeholder="Ask a question…"></textarea>
+            <div class="composer-bar">
+              <button type="button" class="icon-btn" id="attach-btn" aria-label="Add papers" title="Add papers (PDF)">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <span class="composer-hint"><kbd>↵</kbd> send <kbd>⇧ ↵</kbd> new line</span>
+              <button type="submit" class="send-btn" id="send" aria-label="Send question" disabled>
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="popover" id="popover" role="tooltip" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="drop-overlay" id="drop-overlay" hidden>
+    <div class="drop-frame">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+      <strong>Drop to add to your library</strong>
+      <span>PDF files · up to 50 MB each</span>
+    </div>
+  </div>
+</body>
+</html>
