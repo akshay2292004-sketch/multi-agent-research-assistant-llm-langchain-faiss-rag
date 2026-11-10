@@ -122,6 +122,10 @@
 
   // ------------------------------------------------------------ API
 
+  // Resolves once the backend has answered /api/config (it may be cold-starting).
+  let markReady;
+  const serverReady = new Promise((r) => (markReady = r));
+
   async function api(path, options = {}) {
     const res = await fetch(API + path, {
       ...options,
@@ -147,18 +151,32 @@
     el.banner.hidden = !text;
   }
 
+  // Keep trying until the backend answers. Render's free plan takes up to a minute
+  // (occasionally longer) to wake, so never give up; just show how long it's been.
   async function connect() {
     setStatus("waiting", "connecting");
-    const slowTimer = setTimeout(() => {
-      showBanner("Waking up the server. On the free hosting plan this can take up to a minute.");
-      setStatus("waiting", "waking server");
-    }, 3000);
+    const started = Date.now();
+    const tick = () => {
+      const s = Math.round((Date.now() - started) / 1000);
+      if (s < 3) return;
+      setStatus("waiting", `waking server · ${s}s`);
+      showBanner(
+        s < 90
+          ? `Waking up the server · ${s}s. On the free plan this takes up to a minute. You can already type and send; your question goes out as soon as it's ready.`
+          : `Still waking the server · ${s}s. This is slower than usual; it keeps retrying automatically.`
+      );
+    };
+    const ticker = setInterval(tick, 1000);
 
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (;;) {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 25000);
       try {
-        const cfg = await (await api("/api/config")).json();
-        clearTimeout(slowTimer);
+        const cfg = await (await api("/api/config", { signal: ctrl.signal })).json();
+        clearTimeout(timeout);
+        clearInterval(ticker);
         state.online = true;
+        markReady();
         state.model = cfg.model;
         setStatus("ok", cfg.model.split("/").pop(), cfg.model);
         showBanner(
@@ -169,12 +187,10 @@
         updateSendState();
         return;
       } catch (_) {
-        await new Promise((r) => setTimeout(r, 4000));
+        clearTimeout(timeout);
+        await new Promise((r) => setTimeout(r, 3000));
       }
     }
-    clearTimeout(slowTimer);
-    setStatus("down", "unreachable");
-    showBanner("Can't reach the server. Check that the API is deployed and API_BASE in config.js points to it.", "error");
   }
 
   // ------------------------------------------------------------ Toasts
@@ -249,7 +265,14 @@
     const form = new FormData();
     files.forEach((f) => form.append("files", f, f.name));
 
-    const closeWorking = toast(`Indexing ${files.length} document${files.length > 1 ? "s" : ""}…`, "working", 0);
+    const label = `${files.length} document${files.length > 1 ? "s" : ""}`;
+    let closeWorking = () => {};
+    if (!state.online) {
+      closeWorking = toast(`Waiting for the server to wake up, then indexing ${label}…`, "working", 0);
+      await serverReady;
+      closeWorking();
+    }
+    closeWorking = toast(`Indexing ${label}…`, "working", 0);
     try {
       const data = await (await api("/api/papers", { method: "POST", body: form })).json();
       renderPapers(data.papers);
@@ -453,6 +476,15 @@
     const view = addAssistantTurn();
     scrollToBottom(true);
 
+    // Sent during a cold start: hold the question until the server is up.
+    if (!state.online) {
+      const label = view.md.querySelector(".working");
+      const original = label.innerHTML;
+      label.lastChild.textContent = "Waiting for the server to wake up…";
+      await serverReady;
+      label.innerHTML = original;
+    }
+
     const history = state.history.slice(-HISTORY_TURNS);
     let answer = "";
     let mode = "info";
@@ -541,14 +573,14 @@
   // ------------------------------------------------------------ Wiring
 
   function updateSendState() {
-    el.send.disabled = state.busy || !state.online || !el.input.value.trim();
-    el.send.title = !state.online
-      ? "Waiting for the server to connect"
-      : state.busy
+    el.send.disabled = state.busy || !el.input.value.trim();
+    el.send.title = state.busy
       ? "Wait for the current answer to finish"
       : !el.input.value.trim()
       ? "Type a question to send"
-      : "Send question";
+      : state.online
+      ? "Send question"
+      : "Send. It goes out as soon as the server is awake";
   }
 
   function autoGrow() {
