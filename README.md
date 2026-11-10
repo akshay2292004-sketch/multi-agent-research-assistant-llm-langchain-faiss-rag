@@ -7,6 +7,18 @@ when your papers don't cover the question.
 Built with a **FastAPI** backend, a custom **HTML/JS** chat frontend, **FAISS**, **fastembed (all-MiniLM-L6-v2)**, **LangChain text splitters** and
 **Llama 3.3 70B via OpenRouter**.
 
+## 🔗 Live demo
+
+**▶ [multi-agent-research-assistant-llm.vercel.app](https://multi-agent-research-assistant-llm.vercel.app/)**
+
+| Part | Hosted on | URL |
+|---|---|---|
+| Web app | Vercel | https://multi-agent-research-assistant-llm.vercel.app/ |
+| API (FastAPI) | Render | https://research-assistant-api-yc7f.onrender.com |
+
+> The API runs on Render's free plan and sleeps after ~15 minutes of inactivity. On the first visit the
+> app shows *"Waking up the server…"* for up to a minute, then responds normally.
+
 ---
 
 ## 🚀 Features
@@ -17,7 +29,7 @@ Built with a **FastAPI** backend, a custom **HTML/JS** chat frontend, **FAISS**,
 - **🤖 Agent routing:** summary requests, paper questions and general questions go to different agents.
 - **💬 Streaming chat with memory:** answers stream token by token and follow-up questions keep context.
 - **🔒 Per-session papers:** uploads are indexed in memory per browser session, never shared between visitors.
-- **⚙️ Tunable retrieval:** passages per answer and minimum relevance are adjustable in the sidebar.
+- **⚙️ Tunable retrieval:** passages per answer and minimum relevance are set by `TOP_K` and `MIN_RELEVANCE` in `frontend/app.js` (defaults 4 and 0.30).
 
 ---
 
@@ -90,7 +102,7 @@ Push this folder to a GitHub repository (`.env`, `.venv` and caches are git-igno
 1. In Render choose **New → Blueprint** and select the repository. Render reads `render.yaml`.
 2. Enter your `OPENROUTER_API_KEY` when asked.
 3. Deploy. The build installs dependencies and pre-downloads the embedding model.
-4. Note the URL, e.g. `https://research-assistant-api.onrender.com`. Opening it directly also shows the full app.
+4. Note the URL, e.g. `https://research-assistant-api-yc7f.onrender.com`. Opening it directly also shows the full app.
 
 The free plan sleeps after ~15 minutes idle. The site shows a "waking up" notice while the first
 request takes up to a minute.
